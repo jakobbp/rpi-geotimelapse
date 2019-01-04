@@ -16,6 +16,8 @@ KEY_LATITUDE = 'latitude'
 KEY_LONGITUDE = 'longitude'
 KEY_IMAGE_TEMPLATE = 'imageTemplate'
 KEY_LOG_FORMAT = "logFormat"
+KEY_CREATE_VIDEO_COMMAND = "createVideoCommand"
+KEY_UPLOAD_VIDEO_COMMAND = "uploadVideoCommand"
 
 ECLIPTIC_INCLINATION = 28127./216000.*math.pi
 ECLIPTIC_FACTOR = math.tan(ECLIPTIC_INCLINATION)
@@ -51,6 +53,11 @@ class TimeLapse:
 
     def take_picture(self, img_name):
         self.get_camera().capture(img_name)
+
+    def auto_record_and_upload(self):
+        self.auto_record()
+        self.create_video()
+        self.upload_video()
 
     def auto_record(self):
         self.running = True
@@ -99,6 +106,12 @@ class TimeLapse:
                 self.running = False
                 self.log_message("Ending")
 
+    def create_video(self):
+        os.system(self.get_settings()[KEY_CREATE_VIDEO_COMMAND])
+
+    def upload_video(self):
+        os.system(self.get_settings()[KEY_UPLOAD_VIDEO_COMMAND])
+
     def log_message(self, message):
         print (self.get_settings()[KEY_LOG_FORMAT]).format(time=datetime.datetime.now(), message=message)
 
@@ -133,7 +146,7 @@ class TimeLapse:
 def main():
     timelapse = TimeLapse()
     timelapse.init_camera()
-    timelapse.auto_record()
+    timelapse.auto_record_and_upload()
 
 
 if __name__ == '__main__':

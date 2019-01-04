@@ -6,5 +6,7 @@
   "latitude": "46",
   "longitude": "46",
   "imageTemplate": "out/timelapse%05d.jpg",
-  "logFormat": "{time}: {message}"
+  "logFormat": "{time}: {message}",
+  "createVideoCommand": "",
+  "uploadVideoCommand": ""
 }
