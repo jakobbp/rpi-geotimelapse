@@ -1,0 +1,8 @@
+{
+  "width": "1920",
+  "height": "1080",
+  "frameRate": "60",
+  "latitude": "46",
+  "longitude": "46",
+  "imageTemplate": "out/timelapse%05d.jpg"
+}
