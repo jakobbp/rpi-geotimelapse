@@ -60,7 +60,7 @@ class TimeLapse:
         midnight = time.mktime(midnightTime.timetuple())
         dayStart = midnight + 3600*dayLimits[0]
         dayEnd = midnight + 3600*dayLimits[1]
-        self.log_message("Starting auto-daylight recording from {} to {}".format(dayStart, dayEnd))
+        self.log_message("Starting auto-daylight recording from {} to {}".format(dayLimits[0], dayLimits[1]))
 
         frameRate = float(self.get_settings()[KEY_FRAME_RATE])
         timeScale = float(self.get_settings()[KEY_TIME_SCALE])
@@ -75,7 +75,10 @@ class TimeLapse:
             self.log_message("Created output directory: {}".format(outputDir))
 
         initTime = time.time()
-        if initTime < dayStart:
+        if initTime < dayStart or initTime > dayEnd:
+            if initTime > dayEnd:
+                dayStart += 86400
+                dayEnd += 86400
             delay = dayStart - initTime
             self.log_message("Delaying start for {} seconds until dawn".format(delay))
             time.sleep(delay)
