@@ -2,6 +2,7 @@ import json
 import math
 import datetime
 import time
+import os
 from picamera import PiCamera
 
 SETTINGS_FILE_PATH = 'settings.json'
@@ -51,8 +52,8 @@ class TimeLapse:
 
     def auto_record(self):
         self.running = True
-        latitude = self.get_settings()[KEY_LATITUDE]
-        longitude = self.get_settings()[KEY_LONGITUDE]
+        latitude = int(self.get_settings()[KEY_LATITUDE])
+        longitude = int(self.get_settings()[KEY_LONGITUDE])
         curentTime = datetime.datetime.now()
         dayLimits = TimeLapse.get_day_limits(latitude, longitude)
         midnightTime = datetime.datetime(curentTime.year, curentTime.month, curentTime.day, 0, 0, 0, 0)
@@ -66,6 +67,13 @@ class TimeLapse:
         framePeriod = timeScale * 1./frameRate
         self.log_message("Recording every {} seconds for framerate {} at 1:{} timescale".format(framePeriod, frameRate, timeScale))
 
+        imgTemplate = self.get_settings()[KEY_IMAGE_TEMPLATE]
+        testFile = imgTemplate % 0
+        outputDir = os.path.dirname(testFile)
+        if not os.path.exists(outputDir):
+            os.makedirs(outputDir)
+            self.log_message("Created output directory: {}".format(outputDir))
+
         initTime = time.time()
         if initTime < dayStart:
             delay = dayStart - initTime
@@ -76,7 +84,7 @@ class TimeLapse:
         imgIndex = 1
         startTime = time.time()
         while self.running:
-            imgName = self.get_settings()[KEY_IMAGE_TEMPLATE] % imgIndex
+            imgName = imgTemplate % imgIndex
             self.take_picture(imgName)
             self.log_message("Created image {}".format(imgName))
             if time.time() < dayEnd:
