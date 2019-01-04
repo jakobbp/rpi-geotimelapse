@@ -52,8 +52,8 @@ class TimeLapse:
 
     def auto_record(self):
         self.running = True
-        latitude = int(self.get_settings()[KEY_LATITUDE])
-        longitude = int(self.get_settings()[KEY_LONGITUDE])
+        latitude = float(self.get_settings()[KEY_LATITUDE])
+        longitude = float(self.get_settings()[KEY_LONGITUDE])
         curentTime = datetime.datetime.now()
         dayLimits = TimeLapse.get_day_limits(latitude, longitude)
         midnightTime = datetime.datetime(curentTime.year, curentTime.month, curentTime.day, 0, 0, 0, 0)
@@ -62,8 +62,8 @@ class TimeLapse:
         dayEnd = midnight + 3600*dayLimits[1]
         self.log_message("Starting auto-daylight recording from {} to {}".format(dayStart, dayEnd))
 
-        frameRate = self.get_settings()[KEY_FRAME_RATE]
-        timeScale = self.get_settings()[KEY_TIME_SCALE]
+        frameRate = float(self.get_settings()[KEY_FRAME_RATE])
+        timeScale = float(self.get_settings()[KEY_TIME_SCALE])
         framePeriod = timeScale * 1./frameRate
         self.log_message("Recording every {} seconds for framerate {} at 1:{} timescale".format(framePeriod, frameRate, timeScale))
 
