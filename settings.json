@@ -5,6 +5,8 @@
   "timeScale": "360",
   "latitude": "46",
   "longitude": "46",
+  "dawnBufferMinutes": "45",
+  "duskBufferMinutes": "45",
   "imageTemplate": "out/timelapse%05d.jpg",
   "logFormat": "{time}: {message}",
   "createVideoCommand": "",

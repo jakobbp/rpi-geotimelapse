@@ -14,6 +14,8 @@ KEY_FRAME_RATE = 'frameRate'
 KEY_TIME_SCALE = 'timeScale'
 KEY_LATITUDE = 'latitude'
 KEY_LONGITUDE = 'longitude'
+KEY_DAWN_BUFFER = 'dawnBufferMinutes'
+KEY_DUSK_BUFFER = 'duskBufferMinutes'
 KEY_IMAGE_TEMPLATE = 'imageTemplate'
 KEY_LOG_FORMAT = "logFormat"
 KEY_CREATE_VIDEO_COMMAND = "createVideoCommand"
@@ -63,13 +65,17 @@ class TimeLapse:
         self.running = True
         latitude = float(self.get_settings()[KEY_LATITUDE])
         longitude = float(self.get_settings()[KEY_LONGITUDE])
+        dawnBuffer = float(self.get_settings()[KEY_DAWN_BUFFER])
+        duskBuffer = float(self.get_settings()[KEY_DUSK_BUFFER])
         curentTime = datetime.datetime.now()
         dayLimits = TimeLapse.get_day_limits(latitude, longitude)
+        recordStartHour = dayLimits[0]-dawnBuffer/60
+        recordEndHour = dayLimits[1]-duskBuffer/60
         midnightTime = datetime.datetime(curentTime.year, curentTime.month, curentTime.day, 0, 0, 0, 0)
         midnight = time.mktime(midnightTime.timetuple())
-        dayStart = midnight + 3600*dayLimits[0]
-        dayEnd = midnight + 3600*dayLimits[1]
-        self.log_message("Starting auto-daylight recording from {} to {}".format(dayLimits[0], dayLimits[1]))
+        recordStart = midnight + 3600*recordStartHour
+        recordEnd = midnight + 3600*recordEndHour
+        self.log_message("Starting auto-daylight recording from {} to {}".format(recordStartHour, recordEndHour))
 
         frameRate = float(self.get_settings()[KEY_FRAME_RATE])
         timeScale = float(self.get_settings()[KEY_TIME_SCALE])
@@ -84,11 +90,11 @@ class TimeLapse:
             self.log_message("Created output directory: {}".format(outputDir))
 
         initTime = time.time()
-        if initTime < dayStart or initTime > dayEnd:
-            if initTime > dayEnd:
-                dayStart += 86400
-                dayEnd += 86400
-            delay = dayStart - initTime
+        if initTime < recordStart or initTime > recordEnd:
+            if initTime > recordEnd:
+                recordStart += 86400
+                recordEnd += 86400
+            delay = recordStart - initTime
             self.log_message("Delaying start for {} seconds until dawn".format(delay))
             time.sleep(delay)
 
@@ -99,7 +105,7 @@ class TimeLapse:
             imgName = imgTemplate % imgIndex
             self.take_picture(imgName)
             self.log_message("Created image {}".format(imgName))
-            if time.time() < dayEnd:
+            if time.time() < recordEnd:
                 imgIndex += 1
                 time.sleep(framePeriod - ((time.time() - startTime) % framePeriod))
             else:
@@ -120,25 +126,27 @@ class TimeLapse:
         currentDate = datetime.datetime.now()
         springEquinox = datetime.datetime(currentDate.year, 3, 20)
         equinoxOffset = (currentDate-springEquinox).days
-        dayLength = 12
-        if latitude < 90:
-            aCosArg = -math.sin(equinoxOffset/356.*2.*math.pi)*math.tan(math.radians(latitude))*ECLIPTIC_FACTOR
-            if aCosArg > 1:
-                dayLength = 0
-            elif aCosArg < -1:
-                dayLength = 24
-            else:
-                dayLength = 24*math.acos(aCosArg)/math.pi
-        else:
-            if math.sin(equinoxOffset/365.*2.*math.pi)*latitude > 0:
-                dayLength = 0
-            else:
-                dayLength = 24
 
         longitudinalOffset = longitude/15.
         timezoneOffset = time.localtime().tm_hour - time.gmtime().tm_hour
         middayOffset = timezoneOffset - longitudinalOffset
-        dayStart = (36+middayOffset-dayLength/2.) % 24
+
+        dayLength = 12
+        if latitude < 90:
+            aCosArg = -math.sin(equinoxOffset/356.*2.*math.pi)*math.tan(math.radians(latitude))*ECLIPTIC_FACTOR
+            if aCosArg > 1:
+                return (12+middayOffset, 12+middayOffset)
+            elif aCosArg < -1:
+                return (0, 24)
+            else:
+                dayLength = 24*math.acos(aCosArg)/math.pi
+        else:
+            if math.sin(equinoxOffset/365.*2.*math.pi)*latitude > 0:
+                return (12 + middayOffset, 12 + middayOffset)
+            else:
+                return (0, 24)
+
+        dayStart = 12+middayOffset-dayLength/2
         dayEnd = dayStart+dayLength
         return (dayStart, dayEnd)
 
