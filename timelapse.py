@@ -73,7 +73,7 @@ class TimeLapse:
         curentTime = datetime.datetime.now()
         dayLimits = TimeLapse.get_day_limits(latitude, longitude)
         recordStartHour = dayLimits[0]-dawnBuffer/60
-        recordEndHour = dayLimits[1]-duskBuffer/60
+        recordEndHour = dayLimits[1]+duskBuffer/60
         midnightTime = datetime.datetime(curentTime.year, curentTime.month, curentTime.day, 0, 0, 0, 0)
         midnight = time.mktime(midnightTime.timetuple())
         recordStart = midnight + 3600*recordStartHour
