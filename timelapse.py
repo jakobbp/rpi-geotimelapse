@@ -8,6 +8,7 @@ import os
 from picamera import PiCamera
 
 SETTINGS_FILE_PATH = 'settings.json'
+LOG_FILE_PATH = "auto_record.log"
 KEY_WIDTH = 'width'
 KEY_HEIGHT = 'height'
 KEY_FRAME_RATE = 'frameRate'
@@ -30,6 +31,7 @@ class TimeLapse:
         self.settings = None
         self.camera = None
         self.running = False
+        self.log = open(LOG_FILE_PATH, "w")
 
     def init_camera(self):
         self.log_message("Initializing PiCamera")
@@ -119,7 +121,10 @@ class TimeLapse:
         os.system(self.get_settings()[KEY_UPLOAD_VIDEO_COMMAND])
 
     def log_message(self, message):
-        print (self.get_settings()[KEY_LOG_FORMAT]).format(time=datetime.datetime.now(), message=message)
+        logMessage = (self.get_settings()[KEY_LOG_FORMAT]).format(time=datetime.datetime.now(), message=message)
+        print logMessage
+        print >>self.log, logMessage
+        self.log.flush()
 
     @staticmethod
     def get_day_limits(latitude, longitude):
