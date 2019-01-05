@@ -9,6 +9,6 @@
   "duskBufferMinutes": "45",
   "imageTemplate": "out/timelapse%05d.jpg",
   "logFormat": "{time}: {message}",
-  "createVideoCommand": "",
-  "uploadVideoCommand": ""
+  "createVideoCommand": "ffmpeg -r 60 -i out/timelapse%05d.jpg -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p timelapse.mp4",
+  "uploadVideoCommand": "bash upload.sh"
 }
