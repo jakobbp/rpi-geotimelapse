@@ -55,8 +55,9 @@ class TimeLapse:
                 self.settings = json.load(settingsFile)
         return self.settings
 
-    def take_picture(self, img_name):
-        self.get_camera().capture(img_name)
+    def take_picture(self, imgName):
+        self.get_camera().capture(imgName)
+        self.log_message("Created image {}".format(imgName))
 
     def auto_record_and_upload(self):
         self.auto_record()
@@ -100,25 +101,28 @@ class TimeLapse:
             self.log_message("Delaying start for {} seconds until dawn".format(delay))
             time.sleep(delay)
 
-        self.log_message("Starting")
+        self.log_message("Starting recording session")
         imgIndex = 1
         startTime = time.time()
         while self.running:
             imgName = imgTemplate % imgIndex
             self.take_picture(imgName)
-            self.log_message("Created image {}".format(imgName))
             if time.time() < recordEnd:
                 imgIndex += 1
                 time.sleep(framePeriod - ((time.time() - startTime) % framePeriod))
             else:
                 self.running = False
-                self.log_message("Ending")
+                self.log_message("Ending recording session")
 
     def create_video(self):
-        os.system(self.get_settings()[KEY_CREATE_VIDEO_COMMAND])
+        createVideoCommand = self.get_settings()[KEY_CREATE_VIDEO_COMMAND]
+        self.log_message("Creating video with command '{}'".format(createVideoCommand))
+        os.system(createVideoCommand)
 
     def upload_video(self):
-        os.system(self.get_settings()[KEY_UPLOAD_VIDEO_COMMAND])
+        uploadVideoCommand = self.get_settings()[KEY_UPLOAD_VIDEO_COMMAND]
+        self.log_message("Uploading video with command '{}'".format(uploadVideoCommand))
+        os.system(uploadVideoCommand)
 
     def log_message(self, message):
         logMessage = (self.get_settings()[KEY_LOG_FORMAT]).format(time=datetime.datetime.now(), message=message)
