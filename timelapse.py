@@ -9,6 +9,8 @@ from picamera import PiCamera
 
 SETTINGS_FILE_PATH = 'settings.json'
 LOG_FILE_PATH = "auto_record.log"
+REPORT_TEMPLATE_FILE_PATH = "report_template.json"
+
 KEY_WIDTH = 'width'
 KEY_HEIGHT = 'height'
 KEY_FRAME_RATE = 'frameRate'
@@ -21,9 +23,14 @@ KEY_IMAGE_TEMPLATE = 'imageTemplate'
 KEY_LOG_FORMAT = "logFormat"
 KEY_CREATE_VIDEO_COMMAND = "createVideoCommand"
 KEY_UPLOAD_VIDEO_COMMAND = "uploadVideoCommand"
+KEY_REPORT_FILE_PATH = "reportFile"
+KEY_DEVICE = "device"
 
 ECLIPTIC_INCLINATION = 28127./216000.*math.pi
 ECLIPTIC_FACTOR = math.tan(ECLIPTIC_INCLINATION)
+
+ISO_DATE_FORMAT = "%Y-%m-%d"
+ISO_TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
 class TimeLapse:
@@ -113,6 +120,33 @@ class TimeLapse:
             else:
                 self.running = False
                 self.log_message("Ending recording session")
+        self.create_report(latitude, longitude, recordStart, recordEnd, timeScale, imgIndex)
+
+    def create_report(self, latitude, longitude, startTime, endTime, timeScale, nImages):
+        reportFilePath = self.get_settings()[KEY_REPORT_FILE_PATH]
+        self.log_message("Creating report file {}".format(reportFilePath))
+        reportFile = open(reportFilePath, "w")
+        with open(REPORT_TEMPLATE_FILE_PATH) as templateFile:
+            reportTemplate = json.load(templateFile)
+        for i in xrange(len(reportTemplate)):
+            reportDataKey = reportTemplate[str(i+1)]
+            if reportDataKey is "date":
+                print >>reportFile, "Date: {}".format(time.strftime(ISO_DATE_FORMAT, time.gmtime(startTime)))
+            elif reportDataKey is "start":
+                print >>reportFile, "Start: {} UTC".format(time.strftime(ISO_TIME_FORMAT, time.gmtime(startTime)))
+            elif reportDataKey is "end":
+                print >>reportFile, "End: {} UTC".format(time.strftime(ISO_TIME_FORMAT, time.gmtime(endTime)))
+            elif reportDataKey is "exactCoordinates":
+                print >>reportFile, "Coordinates: {}N, {}E".format(latitude, longitude)
+            elif reportDataKey is "approxCoordinates":
+                print >>reportFile, "Coordinates: {:.1f}N, {:.1f}E".format(latitude, longitude)
+            elif reportDataKey is "timeScale":
+                print >>reportFile, "Time scale: 1:{}".format(timeScale)
+            elif reportDataKey is "device":
+                print >>reportFile, "Recorded with: {}".format(self.get_settings()[KEY_DEVICE])
+            elif reportDataKey is "nImages":
+                print >>reportFile, "Number of images taken: {}".format(nImages)
+        reportFile.close()
 
     def create_video(self):
         createVideoCommand = self.get_settings()[KEY_CREATE_VIDEO_COMMAND]

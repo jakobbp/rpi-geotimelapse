@@ -10,5 +10,7 @@
   "imageTemplate": "out/timelapse%05d.jpg",
   "logFormat": "{time}: {message}",
   "createVideoCommand": "ffmpeg -r 60 -i out/timelapse%05d.jpg -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p timelapse.mp4",
-  "uploadVideoCommand": "bash upload.sh"
+  "uploadVideoCommand": "bash upload.sh",
+  "reportFile": "report.txt",
+  "device": "Raspberry Pi Camera Module v1.3"
 }
