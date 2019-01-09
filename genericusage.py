@@ -54,7 +54,7 @@ class GenericCV2CameraProxy(AbstractCameraProxy):
 
 
 def main():
-    cameraProxy = GenericCV2CameraProxy()
+    cameraProxy = GenericCV2CameraProxy(0)
     timelapse = TimeLapse(cameraProxy)
     timelapse.auto_record_and_upload()
 
