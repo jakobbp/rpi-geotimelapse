@@ -33,6 +33,9 @@ class GenericCV2CameraProxy(AbstractCameraProxy):
         rHeight = self.resolution[1]
         iHeight, iWidth, channels = image.shape
 
+        if rWidth == iWidth and rHeight == iHeight:
+            return image.copy()
+
         if rWidth < iWidth and rHeight < iHeight:
             rAspect = float(rWidth)/float(rHeight)
             iAspect = float(iWidth)/float(iHeight)
