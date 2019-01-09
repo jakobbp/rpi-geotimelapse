@@ -38,15 +38,15 @@ class GenericCV2CameraProxy(AbstractCameraProxy):
             iAspect = float(iWidth)/float(iHeight)
             if rAspect < iAspect:
                 scaledWidth = rWidth
-                scaledHeight = rWidth/iAspect
+                scaledHeight = int(rWidth/iAspect + 0.5)
                 wDiff = 0
-                hDiff = scaledHeight-rHeight
+                hDiff = scaledHeight - rHeight
             else:
-                scaledWidth = rHeight*iAspect
+                scaledWidth = int(rHeight*iAspect + 0.5)
                 scaledHeight = rHeight
-                wDiff = scaledWidth-rWidth
+                wDiff = scaledWidth - rWidth
                 hDiff = 0
-            resizedImage = cv2.resize(image, (scaledWidth, scaledHeight))
+            resizedImage = cv2.resize(image, (int(scaledWidth + 0.5), int(scaledHeight + 0.5)))
             croppedImage = resizedImage[wDiff/2:rWidth, hDiff/2:rHeight]
             return croppedImage
 
