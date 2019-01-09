@@ -1,11 +1,9 @@
-#!/usr/bin/env python
-
+import abc
 import json
 import math
 import datetime
 import time
 import os
-from picamera import PiCamera
 
 SETTINGS_FILE_PATH = 'settings.json'
 LOG_FILE_PATH = "auto_record.log"
@@ -34,27 +32,19 @@ ISO_TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
 class TimeLapse:
-    def __init__(self):
+    def __init__(self, camera_proxy):
         self.settings = None
-        self.camera = None
+        self.camera_proxy = camera_proxy
         self.running = False
         self.log = open(LOG_FILE_PATH, "w")
 
-    def init_camera(self):
-        self.log_message("Initializing PiCamera")
-        self.camera = PiCamera()
+    def init_camera_proxy(self):
+        self.log_message("Initializing camera proxy {}"+self.camera_proxy.implementation_type)
         width = int(self.get_settings()[KEY_WIDTH])
         height = int(self.get_settings()[KEY_HEIGHT])
-        self.camera.resolution = (width, height)
-        self.log_message("Resolution set to {}x{}".format(width, height))
-        self.camera.start_preview()
-        time.sleep(2)
+        self.log_message("Setting resolution to {}x{}".format(width, height))
+        self.camera_proxy.init_camera((width, height))
         self.log_message("Camera initialized")
-
-    def get_camera(self):
-        if self.camera is None:
-            self.init_camera()
-        return self.camera
 
     def get_settings(self):
         if self.settings is None:
@@ -63,7 +53,7 @@ class TimeLapse:
         return self.settings
 
     def take_picture(self, imgName):
-        self.get_camera().capture(imgName)
+        self.camera_proxy.take_picture(imgName)
         self.log_message("Created image {}".format(imgName))
 
     def auto_record_and_upload(self):
@@ -73,6 +63,7 @@ class TimeLapse:
 
     def auto_record(self):
         self.running = True
+        self.init_camera_proxy()
         latitude = float(self.get_settings()[KEY_LATITUDE])
         longitude = float(self.get_settings()[KEY_LONGITUDE])
         dawnBuffer = float(self.get_settings()[KEY_DAWN_BUFFER])
@@ -120,6 +111,7 @@ class TimeLapse:
             else:
                 self.running = False
                 self.log_message("Ending recording session")
+        self.camera_proxy.close_camera()
         self.create_report(latitude, longitude, recordStart, recordEnd, timeScale, imgIndex)
 
     def create_report(self, latitude, longitude, startTime, endTime, timeScale, nImages):
@@ -130,21 +122,23 @@ class TimeLapse:
             reportTemplate = json.load(templateFile)
         for i in xrange(len(reportTemplate)):
             reportDataKey = reportTemplate[str(i+1)]
-            if reportDataKey is "date":
+            print reportDataKey
+            print reportDataKey == "date"
+            if reportDataKey == "date":
                 print >>reportFile, "Date: {}".format(time.strftime(ISO_DATE_FORMAT, time.gmtime(startTime)))
-            elif reportDataKey is "start":
+            elif reportDataKey == "start":
                 print >>reportFile, "Start: {} UTC".format(time.strftime(ISO_TIME_FORMAT, time.gmtime(startTime)))
-            elif reportDataKey is "end":
+            elif reportDataKey == "end":
                 print >>reportFile, "End: {} UTC".format(time.strftime(ISO_TIME_FORMAT, time.gmtime(endTime)))
-            elif reportDataKey is "exactCoordinates":
+            elif reportDataKey == "exactCoordinates":
                 print >>reportFile, "Coordinates: {}N, {}E".format(latitude, longitude)
-            elif reportDataKey is "approxCoordinates":
+            elif reportDataKey == "approxCoordinates":
                 print >>reportFile, "Coordinates: {:.1f}N, {:.1f}E".format(latitude, longitude)
-            elif reportDataKey is "timeScale":
+            elif reportDataKey == "timeScale":
                 print >>reportFile, "Time scale: 1:{}".format(timeScale)
-            elif reportDataKey is "device":
+            elif reportDataKey == "device":
                 print >>reportFile, "Recorded with: {}".format(self.get_settings()[KEY_DEVICE])
-            elif reportDataKey is "nImages":
+            elif reportDataKey == "nImages":
                 print >>reportFile, "Number of images taken: {}".format(nImages)
         reportFile.close()
 
@@ -174,7 +168,6 @@ class TimeLapse:
         timezoneOffset = time.localtime().tm_hour - time.gmtime().tm_hour
         middayOffset = timezoneOffset - longitudinalOffset
 
-        dayLength = 12
         if latitude < 90:
             aCosArg = -math.sin(equinoxOffset/356.*2.*math.pi)*math.tan(math.radians(latitude))*ECLIPTIC_FACTOR
             if aCosArg > 1:
@@ -183,22 +176,30 @@ class TimeLapse:
                 return (0, 24)
             else:
                 dayLength = 24*math.acos(aCosArg)/math.pi
+                dayStart = 12+middayOffset-dayLength/2
+                dayEnd = dayStart+dayLength
+                return (dayStart, dayEnd)
         else:
             if math.sin(equinoxOffset/365.*2.*math.pi)*latitude > 0:
                 return (12 + middayOffset, 12 + middayOffset)
             else:
                 return (0, 24)
 
-        dayStart = 12+middayOffset-dayLength/2
-        dayEnd = dayStart+dayLength
-        return (dayStart, dayEnd)
 
+class AbstractCameraProxy():
+    __metaclass__ = abc.ABCMeta
 
-def main():
-    timelapse = TimeLapse()
-    timelapse.init_camera()
-    timelapse.auto_record_and_upload()
+    def __init__(self, implementation_type):
+        self.implementation_type = implementation_type
 
+    @abc.abstractmethod
+    def take_picture(self, imgName):
+        pass
 
-if __name__ == '__main__':
-    main()
+    @abc.abstractmethod
+    def init_camera(self, resolution):
+        pass
+
+    @abc.abstractmethod
+    def close_camera(self):
+        pass
