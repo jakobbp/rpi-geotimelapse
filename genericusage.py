@@ -17,10 +17,10 @@ class GenericCV2CameraProxy(AbstractCameraProxy):
         self.resolution = resolution
         time.sleep(2)
 
-    def take_picture(self, imgName):
+    def take_picture(self, imageName):
         retval, image = self.camera.read()
         scaledImage = self.scale_and_crop_image(image)
-        cv2.imwrite(imgName, scaledImage)
+        cv2.imwrite(imageName, scaledImage)
 
     def close_camera(self):
         self.camera.release()

@@ -16,8 +16,8 @@ class RPiCameraProxy(AbstractCameraProxy):
         self.camera.start_preview()
         time.sleep(2)
 
-    def take_picture(self, imgName):
-        self.camera.capture(imgName)
+    def take_picture(self, imageName):
+        self.camera.capture(imageName)
 
     def close_camera(self):
         pass

@@ -70,8 +70,8 @@ class TimeLapse:
         duskBuffer = float(self.get_settings()[KEY_DUSK_BUFFER])
         curentTime = datetime.datetime.now()
         dayLimits = TimeLapse.get_day_limits(latitude, longitude)
-        recordStartHour = dayLimits[0]-dawnBuffer/60
-        recordEndHour = dayLimits[1]+duskBuffer/60
+        recordStartHour = dayLimits[0] - dawnBuffer/60
+        recordEndHour = dayLimits[1] + duskBuffer/60
         midnightTime = datetime.datetime(curentTime.year, curentTime.month, curentTime.day, 0, 0, 0, 0)
         midnight = time.mktime(midnightTime.timetuple())
         recordStart = midnight + 3600*recordStartHour
@@ -162,7 +162,7 @@ class TimeLapse:
     def get_day_limits(latitude, longitude):
         currentDate = datetime.datetime.now()
         springEquinox = datetime.datetime(currentDate.year, 3, 20)
-        equinoxOffset = (currentDate-springEquinox).days
+        equinoxOffset = (currentDate - springEquinox).days
 
         longitudinalOffset = longitude/15.
         timezoneOffset = time.localtime().tm_hour - time.gmtime().tm_hour
@@ -171,13 +171,13 @@ class TimeLapse:
         if latitude < 90:
             aCosArg = -math.sin(equinoxOffset/356.*2.*math.pi)*math.tan(math.radians(latitude))*ECLIPTIC_FACTOR
             if aCosArg > 1:
-                return (12+middayOffset, 12+middayOffset)
+                return (12 + middayOffset, 12 + middayOffset)
             elif aCosArg < -1:
                 return (0, 24)
             else:
                 dayLength = 24*math.acos(aCosArg)/math.pi
-                dayStart = 12+middayOffset-dayLength/2
-                dayEnd = dayStart+dayLength
+                dayStart = 12 + middayOffset - dayLength/2
+                dayEnd = dayStart + dayLength
                 return (dayStart, dayEnd)
         else:
             if math.sin(equinoxOffset/365.*2.*math.pi)*latitude > 0:
@@ -193,11 +193,11 @@ class AbstractCameraProxy():
         self.implementation_type = implementation_type
 
     @abc.abstractmethod
-    def take_picture(self, imgName):
+    def init_camera(self, resolution):
         pass
 
     @abc.abstractmethod
-    def init_camera(self, resolution):
+    def take_picture(self, image_name):
         pass
 
     @abc.abstractmethod

@@ -6,10 +6,16 @@ GeoTimeLapse captures still images from raspberry pi camera module during daytim
 Daytime hours are determined by the provided geographic coordinates.
 
 ## Usage
-Running the following will start a recording session.
+Running the following will start a recording session on a Raspberry Pi using `picamera` module:
 ```bash
-python timelapse.py
+python rpiusage.py
 ```
+
+Running the following will start a recording session using video device 0 and `cv2` module:
+```bash
+python genericusage.py
+```
+
 Session parameters (such as resolution, time scale, targetted video framerate, etc.) will be read from settings file `settings.json`.
 For details about `settings.json` see [Settings](#settings) section.
 
@@ -40,7 +46,7 @@ Settings are:
  - **`device`**: name of the device the photos will be taken with (can be included into the session's report).
 
 ### Frame Rate, Time Scale and Image Frequency
-The frequency of taking images is determind by both frame rate and time scale.
+The frequency of taking images is determined by both frame rate and time scale.
 While **frame rate** of the final video is quite unambiguously defined term, **time scale** is very much less so.
 
 Time scale is the ratio between the number of time unit in the final video
@@ -76,3 +82,18 @@ Recognized data fields are:
  - **`timeScale`**: targetted time scale for the recording (corresponds to `timeScale` in settings file),
  - **`device`**: name of the device the photos were be taken with (corresponds to `device` in settings file) and
  - **`nImages`**: total number of images taken during the recording.
+
+## Extensions
+Capturing images is not limited to `picamera` and `cv2` modules.
+`TimeLapse` class interacts with capture devices via small abstract wrapper class `AbstractCameraProxy`,
+which can be extended to provide image capturing capabilities using different ways.
+This abstract class declares the following three abstract methods:
+ - **`init_camera(self, resolution)`**: initializes the video device and sets image resolution,
+ - **`take_picture(self, image_name)`**: captures and saves a picture with the given filename and
+ - **`close_camera(self)`**: closes the vide device.
+
+To use `TimeLapse` with a custom camera proxy, first create a class using AbstractCameraProxy as base,
+then override the above methods as appropriate and
+finally pass an instance of this camera proxy implementation to `TimeLapse` as the constructor parameter.
+
+A short and simple example of this is the [implementation of picamera proxy](rpiusage.py).
