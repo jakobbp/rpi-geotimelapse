@@ -2,7 +2,8 @@
 
 import time
 from picamera import PiCamera
-from timelapse import *
+from timelapse import AbstractCameraProxy
+from timelapse import TimeLapse
 
 
 class RPiCameraProxy(AbstractCameraProxy):
@@ -16,16 +17,16 @@ class RPiCameraProxy(AbstractCameraProxy):
         self.camera.start_preview()
         time.sleep(2)
 
-    def take_picture(self, imageName):
-        self.camera.capture(imageName)
+    def take_picture(self, image_name):
+        self.camera.capture(image_name)
 
     def close_camera(self):
         pass
 
 
 def main():
-    cameraProxy = RPiCameraProxy()
-    timelapse = TimeLapse(cameraProxy)
+    camera_proxy = RPiCameraProxy()
+    timelapse = TimeLapse(camera_proxy)
     timelapse.auto_record_and_upload()
 
 

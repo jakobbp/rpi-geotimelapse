@@ -2,7 +2,8 @@
 
 import time
 import cv2
-from timelapse import *
+from timelapse import AbstractCameraProxy
+from timelapse import TimeLapse
 
 
 class GenericCV2CameraProxy(AbstractCameraProxy):
@@ -17,10 +18,10 @@ class GenericCV2CameraProxy(AbstractCameraProxy):
         self.resolution = resolution
         time.sleep(2)
 
-    def take_picture(self, imageName):
+    def take_picture(self, image_name):
         retval, image = self.camera.read()
-        scaledImage = self.scale_and_crop_image(image)
-        cv2.imwrite(imageName, scaledImage)
+        scaled_image = self.scale_and_crop_image(image)
+        cv2.imwrite(image_name, scaled_image)
 
     def close_camera(self):
         self.camera.release()
@@ -29,36 +30,36 @@ class GenericCV2CameraProxy(AbstractCameraProxy):
         if self.resolution is None:
             return image.copy()
 
-        rWidth = self.resolution[0]
-        rHeight = self.resolution[1]
-        iHeight, iWidth, channels = image.shape
+        r_width = self.resolution[0]
+        r_height = self.resolution[1]
+        i_height, i_width, channels = image.shape
 
-        if rWidth == iWidth and rHeight == iHeight:
+        if r_width == i_width and r_height == i_height:
             return image.copy()
 
-        if rWidth < iWidth and rHeight < iHeight:
-            rAspect = float(rWidth)/float(rHeight)
-            iAspect = float(iWidth)/float(iHeight)
-            if rAspect < iAspect:
-                scaledWidth = rWidth
-                scaledHeight = int(rWidth/iAspect + 0.5)
-                wDiff = 0
-                hDiff = scaledHeight - rHeight
+        if r_width < i_width and r_height < i_height:
+            r_aspect = float(r_width)/float(r_height)
+            i_aspect = float(i_width)/float(i_height)
+            if r_aspect < i_aspect:
+                scaled_width = r_width
+                scaled_height = int(r_width/i_aspect + 0.5)
+                w_diff = 0
+                h_diff = scaled_height - r_height
             else:
-                scaledWidth = int(rHeight*iAspect + 0.5)
-                scaledHeight = rHeight
-                wDiff = scaledWidth - rWidth
-                hDiff = 0
-            resizedImage = cv2.resize(image, (int(scaledWidth + 0.5), int(scaledHeight + 0.5)))
-            croppedImage = resizedImage[wDiff/2:rWidth, hDiff/2:rHeight]
-            return croppedImage
+                scaled_width = int(r_height*i_aspect + 0.5)
+                scaled_height = r_height
+                w_diff = scaled_width - r_width
+                h_diff = 0
+            resized_image = cv2.resize(image, (int(scaled_width + 0.5), int(scaled_height + 0.5)))
+            cropped_image = resized_image[w_diff/2:r_width, h_diff/2:r_height]
+            return cropped_image
 
         return image.copy()
 
 
 def main():
-    cameraProxy = GenericCV2CameraProxy(0)
-    timelapse = TimeLapse(cameraProxy)
+    camera_proxy = GenericCV2CameraProxy(0)
+    timelapse = TimeLapse(camera_proxy)
     timelapse.auto_record_and_upload()
 
 
