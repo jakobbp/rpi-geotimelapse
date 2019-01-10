@@ -57,9 +57,11 @@ class TimeLapse:
         self.log_message("Created image {}".format(image_name))
 
     def auto_record_and_upload(self):
+        self.log_message("Auto record and upload started.")
         self.auto_record()
         self.create_video()
         self.upload_video()
+        self.log_message("Auto record and upload finished.")
 
     def auto_record(self):
         self.running = True
@@ -133,7 +135,7 @@ class TimeLapse:
             elif report_data_key == "exactCoordinates":
                 print >>report_file, "Coordinates: {}N, {}E".format(latitude, longitude)
             elif report_data_key == "approxCoordinates":
-                print >>report_file, "Coordinates: {:.1f}N, {:.1f}E".format(latitude, longitude)
+                print >>report_file, "Approximate coordinates: {:.1f}N, {:.1f}E".format(latitude, longitude)
             elif report_data_key == "timeScale":
                 print >>report_file, "Time scale: 1:{}".format(time_scale)
             elif report_data_key == "device":
