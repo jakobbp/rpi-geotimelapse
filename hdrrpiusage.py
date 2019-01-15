@@ -9,27 +9,9 @@ from timelapse import AbstractCameraProxy
 from timelapse import TimeLapse
 
 
-KEY_EXPOSURE_LOWEST = 'lowest'
-KEY_EXPOSURE_LOW = 'low'
-KEY_EXPOSURE_MEDIUM = 'medium'
-KEY_EXPOSURE_HIGH = 'high'
-KEY_EXPOSURE_HIGHEST = 'highest'
-SHUTTER_SPEEDS = {
-    KEY_EXPOSURE_LOWEST: Fraction(1, 2),
-    KEY_EXPOSURE_LOW: Fraction(1, 1),
-    KEY_EXPOSURE_MEDIUM: Fraction(5, 1),
-    KEY_EXPOSURE_HIGH: Fraction(10, 1),
-    KEY_EXPOSURE_HIGHEST: Fraction(15, 1)
-}
-AWB_GAINS = {
-    KEY_EXPOSURE_LOWEST: (Fraction(1, 1), Fraction(1, 1)),
-    KEY_EXPOSURE_LOW: (Fraction(1, 1), Fraction(1, 1)),
-    KEY_EXPOSURE_MEDIUM: (Fraction(2, 2), Fraction(2, 2)),
-    KEY_EXPOSURE_HIGH: (Fraction(3, 3), Fraction(3, 3)),
-    KEY_EXPOSURE_HIGHEST: (Fraction(1, 1), Fraction(1, 1))
-}
 GPU_COMPATIBLE_RESOLUTION = (2592, 1944)
-BRIGHTNESS_THRESHOLD_EXPOSURE_SPEED = 60000
+#SHUTTER_SPEED_FACTORS = [4, 2, 1, 0.5, 0.25]
+SHUTTER_SPEED_FACTORS = [4, 1, 0.25]
 
 
 class HDRRPiCameraProxy(AbstractCameraProxy):
@@ -42,46 +24,28 @@ class HDRRPiCameraProxy(AbstractCameraProxy):
         self.camera = PiCamera()
         self.resolution = resolution
         self.camera.resolution = GPU_COMPATIBLE_RESOLUTION
-        self.camera.exposure_mode = 'off'
-        self.camera.awb_mode = 'off'
 
     def take_picture(self, image_name):
-        too_bright = self.check_brightness()
+        exposure_speed = self.camera.exposure_speed
         images = []
-        if not too_bright:
-            images.append(self.capture_picture_with_exposure(KEY_EXPOSURE_LOWEST))
-            images.append(self.capture_picture_with_exposure(KEY_EXPOSURE_LOW))
-        images.append(self.capture_picture_with_exposure(KEY_EXPOSURE_MEDIUM))
-        images.append(self.capture_picture_with_exposure(KEY_EXPOSURE_HIGH))
-        images.append(self.capture_picture_with_exposure(KEY_EXPOSURE_HIGHEST))
+        for factor in SHUTTER_SPEED_FACTORS:
+            shutter_speed = exposure_speed*factor
+            images.append(self.capture_picture_with_shutter_speed(shutter_speed))
         hdr_image = HDRRPiCameraProxy.create_hdr_image(images)
         scaled_image = self.scale_and_crop_image(hdr_image)
         cv2.imwrite(image_name, scaled_image)
+        self.camera.shutter_speed = 0
 
     def close_camera(self):
         self.camera.stop_preview()
         self.camera.close()
 
-    def check_brightness(self):
-        self.camera.shutter_speed = 0
-        self.camera.exposure_mode = 'auto'
-        self.camera.awb_mode = 'auto'
-        time.sleep(2)
-        exposure_speed = self.camera.exposure_speed
-        self.camera.exposure_mode = 'off'
-        self.camera.awb_mode = 'off'
-        return exposure_speed < BRIGHTNESS_THRESHOLD_EXPOSURE_SPEED
-
-    def capture_picture_with_exposure(self, exposure_key):
-        self.set_exposure_settings(exposure_key)
+    def capture_picture_with_shutter_speed(self, shutter_speed):
+        self.camera.shutter_speed = shutter_speed
         resolution = self.camera.resolution
         image = numpy.empty((resolution[0] * resolution[1] * 3), dtype=numpy.uint8)
         self.camera.capture(image, format='bgr', use_video_port=False)
         return image.reshape((resolution[1], resolution[0], 3))
-
-    def set_exposure_settings(self, exposure_key):
-        self.camera.shutter_speed = SHUTTER_SPEEDS[exposure_key]
-        self.camera.awb_gains = AWB_GAINS[exposure_key]
 
     def scale_and_crop_image(self, image):
         if self.resolution is None:
