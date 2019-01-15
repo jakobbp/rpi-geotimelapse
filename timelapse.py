@@ -30,6 +30,16 @@ ECLIPTIC_FACTOR = math.tan(ECLIPTIC_INCLINATION)
 ISO_DATE_FORMAT = "%Y-%m-%d"
 ISO_TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
+REPORT_KEY_DATE = "date"
+REPORT_KEY_START_TIME = "start"
+REPORT_KEY_END_TIME = "end"
+REPORT_KEY_EXACT_COORDINATES = "exactCoordinates"
+REPORT_KEY_APPROXIMATE_COORDINATES = "approxCoordinates"
+REPORT_KEY_TIME_SCALE = "timeScale"
+REPORT_KEY_DEVICE = "device"
+REPORT_KEY_PROXY_IMPLEMENTATION = "implementation"
+REPORT_KEY_N_IMAGES = "nImages"
+
 
 class TimeLapse:
     def __init__(self, camera_proxy):
@@ -64,57 +74,59 @@ class TimeLapse:
         self.log_message("Auto record and upload finished.")
 
     def auto_record(self):
-        self.running = True
-        self.init_camera_proxy()
-        latitude = float(self.get_settings()[KEY_LATITUDE])
-        longitude = float(self.get_settings()[KEY_LONGITUDE])
-        dawn_buffer = float(self.get_settings()[KEY_DAWN_BUFFER])
-        dusk_buffer = float(self.get_settings()[KEY_DUSK_BUFFER])
-        curent_time = datetime.datetime.now()
-        day_limits = TimeLapse.get_day_limits(latitude, longitude)
-        record_start_hour = day_limits[0] - dawn_buffer/60
-        record_end_hour = day_limits[1] + dusk_buffer/60
-        midnight_time = datetime.datetime(curent_time.year, curent_time.month, curent_time.day, 0, 0, 0, 0)
-        midnight = time.mktime(midnight_time.timetuple())
-        record_start = midnight + 3600*record_start_hour
-        record_end = midnight + 3600*record_end_hour
-        self.log_message("Starting auto-daylight recording from {} to {}".format(record_start_hour, record_end_hour))
+        try:
+            self.running = True
+            self.init_camera_proxy()
+            latitude = float(self.get_settings()[KEY_LATITUDE])
+            longitude = float(self.get_settings()[KEY_LONGITUDE])
+            dawn_buffer = float(self.get_settings()[KEY_DAWN_BUFFER])
+            dusk_buffer = float(self.get_settings()[KEY_DUSK_BUFFER])
+            current_time = datetime.datetime.now()
+            day_limits = TimeLapse.get_day_limits(latitude, longitude)
+            record_start_hour = day_limits[0] - dawn_buffer/60
+            record_end_hour = day_limits[1] + dusk_buffer/60
+            midnight_time = datetime.datetime(current_time.year, current_time.month, current_time.day, 0, 0, 0, 0)
+            midnight = time.mktime(midnight_time.timetuple())
+            record_start = midnight + 3600*record_start_hour
+            record_end = midnight + 3600*record_end_hour
+            self.log_message("Starting auto-daylight recording from {} to {}".format(record_start_hour, record_end_hour))
 
-        frame_rate = float(self.get_settings()[KEY_FRAME_RATE])
-        time_scale = float(self.get_settings()[KEY_TIME_SCALE])
-        frame_period = time_scale * 1./frame_rate
-        self.log_message("Recording every {} seconds for frame rate {} at 1:{} timescale".format(frame_period, frame_rate, time_scale))
+            frame_rate = float(self.get_settings()[KEY_FRAME_RATE])
+            time_scale = float(self.get_settings()[KEY_TIME_SCALE])
+            frame_period = time_scale * 1./frame_rate
+            self.log_message("Recording every {} seconds for frame rate {} at 1:{} timescale".format(frame_period, frame_rate, time_scale))
 
-        image_template = self.get_settings()[KEY_IMAGE_TEMPLATE]
-        test_file = image_template % 0
-        output_dir = os.path.dirname(test_file)
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-            self.log_message("Created output directory: {}".format(output_dir))
+            image_template = self.get_settings()[KEY_IMAGE_TEMPLATE]
+            test_file = image_template % 0
+            output_dir = os.path.dirname(test_file)
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+                self.log_message("Created output directory: {}".format(output_dir))
 
-        init_time = time.time()
-        if init_time < record_start or init_time > record_end:
-            if init_time > record_end:
-                record_start += 86400
-                record_end += 86400
-            delay = record_start - init_time
-            self.log_message("Delaying start for {} seconds until dawn".format(delay))
-            time.sleep(delay)
+            init_time = time.time()
+            if init_time < record_start or init_time > record_end:
+                if init_time > record_end:
+                    record_start += 86400
+                    record_end += 86400
+                delay = record_start - init_time
+                self.log_message("Delaying start for {} seconds until dawn".format(delay))
+                time.sleep(delay)
 
-        self.log_message("Starting recording session")
-        image_index = 1
-        start_time = time.time()
-        while self.running:
-            image_name = image_template % image_index
-            self.take_picture(image_name)
-            if time.time() < record_end:
-                image_index += 1
-                time.sleep(frame_period - ((time.time() - start_time) % frame_period))
-            else:
-                self.running = False
-                self.log_message("Ending recording session")
-        self.camera_proxy.close_camera()
-        self.create_report(latitude, longitude, record_start, record_end, time_scale, image_index)
+            self.log_message("Starting recording session")
+            image_index = 1
+            start_time = time.time()
+            while self.running:
+                image_name = image_template % image_index
+                self.take_picture(image_name)
+                if time.time() < record_end:
+                    image_index += 1
+                    time.sleep(frame_period - ((time.time() - start_time) % frame_period))
+                else:
+                    self.running = False
+                    self.log_message("Ending recording session")
+            self.create_report(latitude, longitude, record_start, record_end, time_scale, image_index)
+        finally:
+            self.camera_proxy.close_camera()
 
     def create_report(self, latitude, longitude, start_time, end_time, time_scale, n_images):
         report_file_path = self.get_settings()[KEY_REPORT_FILE_PATH]
@@ -124,23 +136,23 @@ class TimeLapse:
             report_template = json.load(template_file)
         for i in xrange(len(report_template)):
             report_data_key = report_template[str(i+1)]
-            print report_data_key
-            print report_data_key == "date"
-            if report_data_key == "date":
+            if report_data_key == REPORT_KEY_DATE:
                 print >>report_file, "Date: {}".format(time.strftime(ISO_DATE_FORMAT, time.gmtime(start_time)))
-            elif report_data_key == "start":
+            elif report_data_key == REPORT_KEY_START_TIME:
                 print >>report_file, "Start: {} UTC".format(time.strftime(ISO_TIME_FORMAT, time.gmtime(start_time)))
-            elif report_data_key == "end":
+            elif report_data_key == REPORT_KEY_END_TIME:
                 print >>report_file, "End: {} UTC".format(time.strftime(ISO_TIME_FORMAT, time.gmtime(end_time)))
-            elif report_data_key == "exactCoordinates":
+            elif report_data_key == REPORT_KEY_EXACT_COORDINATES:
                 print >>report_file, "Coordinates: {}N, {}E".format(latitude, longitude)
-            elif report_data_key == "approxCoordinates":
+            elif report_data_key == REPORT_KEY_APPROXIMATE_COORDINATES:
                 print >>report_file, "Approximate coordinates: {:.1f}N, {:.1f}E".format(latitude, longitude)
-            elif report_data_key == "timeScale":
+            elif report_data_key == REPORT_KEY_TIME_SCALE:
                 print >>report_file, "Time scale: 1:{}".format(time_scale)
-            elif report_data_key == "device":
+            elif report_data_key == REPORT_KEY_DEVICE:
                 print >>report_file, "Recorded with: {}".format(self.get_settings()[KEY_DEVICE])
-            elif report_data_key == "nImages":
+            elif report_data_key == REPORT_KEY_PROXY_IMPLEMENTATION:
+                print >>report_file, "Recording implementation: {}".format(self.camera_proxy.implementation_type)
+            elif report_data_key == REPORT_KEY_N_IMAGES:
                 print >>report_file, "Number of images taken: {}".format(n_images)
         report_file.close()
 

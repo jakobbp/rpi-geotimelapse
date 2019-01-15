@@ -21,7 +21,8 @@ class RPiCameraProxy(AbstractCameraProxy):
         self.camera.capture(image_name)
 
     def close_camera(self):
-        pass
+        self.camera.stop_preview()
+        self.camera.close()
 
 
 def main():

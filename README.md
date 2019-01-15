@@ -80,7 +80,8 @@ Recognized data fields are:
  - **`exactCoordinates`**: exact geographic coordinates of the place of the recording,
  - **`approxCoordinates`**: geographic coordinates of the place of the recording rounded to first decimal (for privacy),
  - **`timeScale`**: targetted time scale for the recording (corresponds to `timeScale` in settings file),
- - **`device`**: name of the device the photos were be taken with (corresponds to `device` in settings file) and
+ - **`device`**: name of the device the photos were be taken with (corresponds to `device` in settings file),
+ - **`implementation`**: description of the camera proxy class implementation used for taking the pictures and
  - **`nImages`**: total number of images taken during the recording.
 
 ## Extensions
