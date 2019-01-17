@@ -200,7 +200,7 @@ class TimeLapse:
                 return (0, 24)
 
 
-class AbstractCameraProxy():
+class AbstractCameraProxy:
     __metaclass__ = abc.ABCMeta
 
     def __init__(self, implementation_type):
